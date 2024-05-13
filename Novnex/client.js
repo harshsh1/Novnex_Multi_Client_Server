@@ -17,6 +17,12 @@ rl.question('Enter a username to join the chat: ', username => {
   // Handle incoming data from server
   client.on('data', data => {
     console.log(data.toString());
+  
+    if (data.toString().includes('Username')) {
+      rl.question('Username unavailable. Please choose another one: ', newUsername => {
+        client.write(`/username ${newUsername}`);
+      });
+    }
   });
 
   // Handle user input
@@ -40,7 +46,6 @@ rl.question('Enter a username to join the chat: ', username => {
   // Handle socket errors
   client.on('error', err => {
     console.error('Error:', err.message);
-    // Attempt to reconnect automatically (optional)
-    // client.connect(1235, 'localhost');
   });
 });
+
