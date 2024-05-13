@@ -1,7 +1,7 @@
 const net = require('net');
 const Sentiment = require('sentiment');
-const sentiment = new Sentiment();
 
+const sentiment = new Sentiment();
 const clients = [];
 
 const server = net.createServer(socket => {
@@ -22,17 +22,28 @@ const server = net.createServer(socket => {
     });
   }
 
+  // Function to check if username is unique
+  function isUsernameUnique(username) {
+    return !clients.some(client => client.username === username);
+  }
+
   // Handle regular messages from clients
   function handleMessage(socket, message) {
     const sentimentResult = sentiment.analyze(message);
     broadcast(socket.username, message, sentimentResult.score);
   }
 
-  // Handle username change command
+  // Handle username change command with uniqueness check and re-prompt
   function handleUsernameChange(socket, message) {
     const newUsername = message.split(' ')[1];
-    socket.username = newUsername;
-    socket.write(`Your username has been changed to: ${newUsername}\n`);
+    if (isUsernameUnique(newUsername)) {
+      socket.username = newUsername;
+      socket.write(`Your username has been changed to: ${newUsername}\n`);
+    } else {
+      socket.write('Username already taken. Please choose another username:\n');
+      // Trigger re-prompt for username on the client-side
+      socket.write('/prompt_username\n'); // Send a custom command to trigger re-prompt
+    }
   }
 
   // Send list of connected users
@@ -72,7 +83,12 @@ const server = net.createServer(socket => {
     } else if (message === '/quit') {
       socket.end();
     } else {
-      handleMessage(socket, message);
+      // Check if username is set before handling messages
+      if (socket.username) {
+        handleMessage(socket, message);
+      } else {
+        socket.write('Please enter a username:\n');
+      }
     }
   });
 
@@ -84,4 +100,6 @@ const server = net.createServer(socket => {
 server.listen(1235, () => {
   console.log('Server is listening on port 1235');
 });
+
+
 
